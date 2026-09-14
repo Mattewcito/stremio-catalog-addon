@@ -22,10 +22,13 @@ function corsHeaders(res) {
 }
 
 function getBaseUrl(req) {
-  // En Vercel, VERCEL_URL no tiene protocolo
+  // Priorizar el host header — refleja el dominio real al que accedió el usuario
+  // (en Vercel, VERCEL_URL da la URL de preview/deployment, no la de producción)
+  const host = req.headers.host;
+  const proto = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+  if (host) return `${proto}://${host}`;
   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-  const proto = req.headers['x-forwarded-proto'] || req.protocol || 'http';
-  return `${proto}://${req.headers.host}`;
+  return 'http://localhost:3000';
 }
 
 // ── Página de configuración ───────────────────────────────────────────────────
