@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mi Catálogo — Configurar</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.3/Sortable.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0f0f13;
+      --surface:  #1a1a24;
+      --border:   #2e2e42;
+      --accent:   #8b5cf6;
+      --accent2:  #6d28d9;
+      --text:     #e8e8f0;
+      --muted:    #7878a0;
+      --success:  #22c55e;
+      --danger:   #ef4444;
+      --radius:   12px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      padding: 0 16px 60px;
+    }
+
+    /* ── Header ── */
+    header {
+      text-align: center;
+      padding: 48px 0 32px;
+    }
+    header .logo { font-size: 2.5rem; }
+    header h1 { font-size: 1.8rem; font-weight: 700; margin: 8px 0 4px; }
+    header p  { color: var(--muted); font-size: .95rem; }
+
+    /* ── Layout ── */
+    .container { max-width: 640px; margin: 0 auto; }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .card-title {
+      font-size: .8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    /* ── Language selector ── */
+    select {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 10px 14px;
+      font-size: .95rem;
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237878a0' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+    }
+    select:focus { outline: 2px solid var(--accent); border-color: transparent; }
+
+    /* ── API key input ── */
+    .input-group { display: flex; gap: 8px; align-items: center; }
+    input[type="text"], input[type="password"] {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 10px 14px;
+      font-size: .95rem;
+      font-family: 'Courier New', monospace;
+    }
+    input:focus { outline: 2px solid var(--accent); border-color: transparent; }
+    .input-hint {
+      font-size: .8rem;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+    .input-hint a { color: var(--accent); text-decoration: none; }
+    .input-hint a:hover { text-decoration: underline; }
+
+    /* ── Botón de ojo (mostrar/ocultar key) ── */
+    .btn-eye {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 10px 12px;
+      font-size: 1rem;
+      transition: color .2s;
+    }
+    .btn-eye:hover { color: var(--text); }
+
+    /* ── Lista de catálogos ── */
+    #catalog-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+
+    .catalog-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      transition: border-color .2s, background .2s;
+      user-select: none;
+    }
+    .catalog-item:hover { border-color: var(--accent); }
+    .catalog-item.disabled { opacity: .45; }
+
+    .drag-handle {
+      color: var(--muted);
+      cursor: grab;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+    .drag-handle:active { cursor: grabbing; }
+
+    .catalog-icon { font-size: 1.2rem; flex-shrink: 0; }
+
+    .catalog-name {
+      flex: 1;
+      font-size: .95rem;
+      font-weight: 500;
+    }
+
+    /* ── Toggle switch ── */
+    .toggle {
+      position: relative;
+      width: 42px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-track {
+      position: absolute;
+      inset: 0;
+      background: var(--border);
+      border-radius: 24px;
+      cursor: pointer;
+      transition: background .25s;
+    }
+    .toggle-track::after {
+      content: '';
+      position: absolute;
+      left: 3px;
+      top: 3px;
+      width: 18px;
+      height: 18px;
+      background: white;
+      border-radius: 50%;
+      transition: transform .25s;
+    }
+    .toggle input:checked + .toggle-track { background: var(--accent); }
+    .toggle input:checked + .toggle-track::after { transform: translateX(18px); }
+
+    /* ── Sortable ghost ── */
+    .sortable-ghost { opacity: .3; background: var(--accent2) !important; }
+    .sortable-chosen { border-color: var(--accent) !important; }
+
+    /* ── Botón principal ── */
+    .btn-primary {
+      width: 100%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 14px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity .2s, transform .1s;
+      margin-top: 8px;
+    }
+    .btn-primary:hover   { opacity: .92; }
+    .btn-primary:active  { transform: scale(.98); }
+    .btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+
+    /* ── Resultado (URL generada) ── */
+    #result { display: none; }
+
+    .url-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-family: 'Courier New', monospace;
+      font-size: .82rem;
+      word-break: break-all;
+      color: var(--accent);
+      margin-bottom: 12px;
+      line-height: 1.5;
+    }
+
+    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    .btn-secondary {
+      flex: 1;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 11px 14px;
+      font-size: .9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: border-color .2s;
+      text-align: center;
+    }
+    .btn-secondary:hover { border-color: var(--accent); }
+
+    .btn-stremio {
+      flex: 1;
+      background: #8c43ed;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 11px 14px;
+      font-size: .9rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      text-align: center;
+      display: inline-block;
+      transition: opacity .2s;
+    }
+    .btn-stremio:hover { opacity: .88; }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--success);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: .9rem;
+      transition: transform .3s ease;
+      z-index: 100;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ── Responsive ── */
+    @media (max-width: 480px) {
+      header h1 { font-size: 1.4rem; }
+      .btn-row { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🎬</div>
+  <h1>Mi Catálogo</h1>
+  <p>Configurá tu catálogo personalizado para Stremio</p>
+</header>
+
+<div class="container">
+
+  <!-- ── Idioma ── -->
+  <div class="card">
+    <div class="card-title">🌐 Idioma del catálogo</div>
+    <select id="language">
+      <option value="es-MX">Español Latino (es-MX)</option>
+      <option value="es-ES">Español España (es-ES)</option>
+      <option value="en-US">English (en-US)</option>
+      <option value="pt-BR">Português Brasil (pt-BR)</option>
+      <option value="fr-FR">Français (fr-FR)</option>
+      <option value="de-DE">Deutsch (de-DE)</option>
+      <option value="it-IT">Italiano (it-IT)</option>
+      <option value="ja-JP">日本語 (ja-JP)</option>
+      <option value="ko-KR">한국어 (ko-KR)</option>
+      <option value="zh-CN">中文 (zh-CN)</option>
+    </select>
+  </div>
+
+  <!-- ── TMDB API Key ── -->
+  <div class="card">
+    <div class="card-title">🔑 TMDB — API Key</div>
+    <div class="input-group">
+      <input type="password" id="tmdb-key" placeholder="Pegá tu API key de TMDB" autocomplete="off" />
+      <button class="btn-eye" onclick="toggleKey()" title="Mostrar/ocultar">👁</button>
+    </div>
+    <p class="input-hint">
+      Necesaria para los catálogos de TMDB. Obtené la tuya gratis en
+      <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener">
+        themoviedb.org → Settings → API ↗
+      </a><br>
+      Registrate, pedí una "Developer API key" y copiá el valor de <strong>API Read Access Token</strong>
+      o <strong>API Key (v3 auth)</strong>.
+    </p>
+  </div>
+
+  <!-- ── Catálogos ── -->
+  <div class="card">
+    <div class="card-title">📋 Catálogos — arrastrá para reordenar</div>
+    <ul id="catalog-list"></ul>
+  </div>
+
+  <!-- ── Generar ── -->
+  <button class="btn-primary" onclick="generate()">🚀 Generar mi URL personal</button>
+
+  <!-- ── Resultado ── -->
+  <div class="card" id="result" style="margin-top:16px;">
+    <div class="card-title">✅ Tu URL de addon</div>
+    <div class="url-box" id="addon-url"></div>
+    <div class="btn-row">
+      <button class="btn-secondary" onclick="copyUrl()">📋 Copiar URL</button>
+      <a id="stremio-link" class="btn-stremio" href="#" target="_blank">▶️ Instalar en Stremio</a>
+    </div>
+    <p class="input-hint" style="margin-top:12px;">
+      O copiá la URL y en Stremio → Complementos → Agregar complemento → pegala ahí.
+    </p>
+  </div>
+
+</div><!-- /container -->
+
+<div class="toast" id="toast">✅ URL copiada</div>
+
+<script>
+// ── Datos iniciales ────────────────────────────────────────────────────────
+
+const CATALOG_META = [
+  { source: 'tmdb', category: 'trending',  type: 'movie',  name: 'Tendencias — Películas', icon: '🔥', enabled: true  },
+  { source: 'tmdb', category: 'trending',  type: 'series', name: 'Tendencias — Series',    icon: '🔥', enabled: true  },
+  { source: 'tmdb', category: 'popular',   type: 'movie',  name: 'Populares — Películas',  icon: '⭐', enabled: true  },
+  { source: 'tmdb', category: 'popular',   type: 'series', name: 'Populares — Series',     icon: '⭐', enabled: false },
+  { source: 'tmdb', category: 'top_rated', type: 'movie',  name: 'Mejor Valoradas — Películas', icon: '🏆', enabled: false },
+  { source: 'tmdb', category: 'top_rated', type: 'series', name: 'Mejor Valoradas — Series',    icon: '🏆', enabled: false },
+];
+
+// ── Encode/decode config (espejo del servidor) ─────────────────────────────
+
+function encodeConfig(config) {
+  const json = JSON.stringify(config);
+  // btoa → base64 → convertir a base64url
+  return btoa(unescape(encodeURIComponent(json)))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
+function decodeConfig(encoded) {
+  try {
+    const std = encoded.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = std + '='.repeat((4 - std.length % 4) % 4);
+    return JSON.parse(decodeURIComponent(escape(atob(padded))));
+  } catch { return null; }
+}
+
+// ── Cargar config existente desde URL (para reconfigurar) ─────────────────
+
+function loadFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const encoded = params.get('config');
+  if (!encoded) return null;
+  return decodeConfig(encoded);
+}
+
+// ── Renderizar lista de catálogos ─────────────────────────────────────────
+
+let catalogs = []; // estado actual
+
+function renderList(initial) {
+  const list = document.getElementById('catalog-list');
+  list.innerHTML = '';
+  catalogs = JSON.parse(JSON.stringify(initial));
+
+  catalogs.forEach((cat, i) => {
+    const li = document.createElement('li');
+    li.className = 'catalog-item' + (cat.enabled ? '' : ' disabled');
+    li.dataset.index = i;
+    li.innerHTML = `
+      <span class="drag-handle" title="Arrastrá para reordenar">⠿</span>
+      <span class="catalog-icon">${cat.icon}</span>
+      <span class="catalog-name">${cat.name}</span>
+      <label class="toggle" title="Activar / desactivar">
+        <input type="checkbox" ${cat.enabled ? 'checked' : ''}
+               onchange="toggleCatalog(${i}, this.checked)" />
+        <span class="toggle-track"></span>
+      </label>
+    `;
+    list.appendChild(li);
+  });
+
+  // Drag & drop con SortableJS
+  Sortable.create(list, {
+    animation: 150,
+    handle: '.drag-handle',
+    ghostClass: 'sortable-ghost',
+    chosenClass: 'sortable-chosen',
+    onEnd(evt) {
+      const moved = catalogs.splice(evt.oldIndex, 1)[0];
+      catalogs.splice(evt.newIndex, 0, moved);
+      // Actualizar data-index
+      list.querySelectorAll('.catalog-item').forEach((el, i) => {
+        el.dataset.index = i;
+        const cb = el.querySelector('input[type=checkbox]');
+        if (cb) cb.setAttribute('onchange', `toggleCatalog(${i}, this.checked)`);
+      });
+    }
+  });
+}
+
+function toggleCatalog(index, enabled) {
+  catalogs[index].enabled = enabled;
+  const items = document.querySelectorAll('.catalog-item');
+  items[index].classList.toggle('disabled', !enabled);
+}
+
+// ── Toggle visibilidad API key ─────────────────────────────────────────────
+
+function toggleKey() {
+  const input = document.getElementById('tmdb-key');
+  input.type = input.type === 'password' ? 'text' : 'password';
+}
+
+// ── Generar URL ────────────────────────────────────────────────────────────
+
+function generate() {
+  const apiKey = document.getElementById('tmdb-key').value.trim();
+  const language = document.getElementById('language').value;
+
+  const hasTmdb = catalogs.some(c => c.source === 'tmdb' && c.enabled);
+  if (hasTmdb && !apiKey) {
+    alert('❗ Agregá tu API key de TMDB para usar esos catálogos.');
+    document.getElementById('tmdb-key').focus();
+    return;
+  }
+
+  const config = {
+    language,
+    sources: hasTmdb ? { tmdb: { apiKey } } : {},
+    catalogs: catalogs.map(({ source, category, type, name, enabled }) =>
+      ({ source, category, type, name, enabled })
+    )
+  };
+
+  const encoded = encodeConfig(config);
+  const base = window.location.origin;
+  const manifestUrl = `${base}/${encoded}/manifest.json`;
+  const stremioUrl = `stremio:///${manifestUrl}`;
+
+  document.getElementById('addon-url').textContent = manifestUrl;
+  document.getElementById('stremio-link').href = stremioUrl;
+  document.getElementById('result').style.display = 'block';
+  document.getElementById('result').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ── Copiar URL ─────────────────────────────────────────────────────────────
+
+function copyUrl() {
+  const url = document.getElementById('addon-url').textContent;
+  navigator.clipboard.writeText(url).then(() => {
+    const toast = document.getElementById('toast');
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2200);
+  });
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+
+(function init() {
+  // Intentar cargar config guardada desde URL
+  const saved = loadFromUrl();
+
+  if (saved) {
+    // Pre-cargar idioma
+    document.getElementById('language').value = saved.language || 'es-MX';
+    // Pre-cargar API key si existe
+    if (saved.sources?.tmdb?.apiKey) {
+      document.getElementById('tmdb-key').value = saved.sources.tmdb.apiKey;
+    }
+    // Reconstruir lista con el orden y estado guardado
+    const merged = saved.catalogs.map(cat => ({
+      ...CATALOG_META.find(m => m.source === cat.source && m.category === cat.category && m.type === cat.type),
+      ...cat
+    })).filter(Boolean);
+    renderList(merged);
+  } else {
+    renderList(CATALOG_META);
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "name": "stremio-catalog-addon",
+  "version": "1.0.0",
+  "description": "Catálogo personalizable para Stremio — TMDB, orden y visibilidad a tu gusto",
+  "main": "api/index.js",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "start": "node api/index.js",
+    "dev": "node --watch api/index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
