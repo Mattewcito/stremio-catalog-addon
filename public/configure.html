@@ -457,7 +457,9 @@ function generate() {
   const encoded = encodeConfig(config);
   const base = window.location.origin;
   const manifestUrl = `${base}/${encoded}/manifest.json`;
-  const stremioUrl = `stremio:///${manifestUrl}`;
+  // Formato correcto según stremio-addon-sdk:
+  // stremio://{host}/{path}  →  SIN "https://" y con solo dos barras
+  const stremioUrl = `stremio://${manifestUrl.replace(/^https?:\/\//, '')}`;
 
   document.getElementById('addon-url').textContent = manifestUrl;
   document.getElementById('stremio-link').href = stremioUrl;
